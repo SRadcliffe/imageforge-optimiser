@@ -10,11 +10,11 @@ ImageForge Optimiser helps reduce image file sizes while maintaining excellent v
 
 Replace these with your actual screenshots.
 
-![ImageForge Optimiser](screenshots/imageforge-main.png)
+![ImageForge Optimiser](screenshots/imageforge-empty.png)
 
-![Batch Processing](screenshots/imageforge-processing.png)
+![Batch Processing](screenshots/imageforge-loaded.png)
 
-![Optimised Results](screenshots/imageforge-results.png)
+![Optimised Results](screenshots/imageforge-complete.png)
 
 ---
 
