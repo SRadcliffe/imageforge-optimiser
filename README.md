@@ -161,6 +161,7 @@ Compression estimation
 Clone the repository:
 
 git clone https://github.com/SRadcliffe/imageforge-optimiser.git
+
 cd imageforge-optimiser
 
 Install dependencies:
