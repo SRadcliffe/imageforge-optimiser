@@ -31,7 +31,15 @@
         </div>
 
         <section class="table-wrap">
-          <table>
+          <table class="file-table file-table-head">
+            <colgroup>
+              <col class="col-index" />
+              <col class="col-name" />
+              <col class="col-original" />
+              <col class="col-new" />
+              <col class="col-savings" />
+              <col class="col-status" />
+            </colgroup>
             <thead>
               <tr>
                 <th>#</th>
@@ -42,8 +50,20 @@
                 <th>Status</th>
               </tr>
             </thead>
-            <tbody id="fileTable"></tbody>
           </table>
+          <div class="table-body-scroll">
+            <table class="file-table file-table-body" aria-label="Image files">
+              <colgroup>
+                <col class="col-index" />
+                <col class="col-name" />
+                <col class="col-original" />
+                <col class="col-new" />
+                <col class="col-savings" />
+                <col class="col-status" />
+              </colgroup>
+              <tbody id="fileTable"></tbody>
+            </table>
+          </div>
           <div id="emptyState" class="empty-state">
             <strong>Drop images here</strong>
             <span>or click Add Images</span>
