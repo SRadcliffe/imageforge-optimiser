@@ -97,7 +97,7 @@ Manual control over format, quality and output settings.
 
 ## Version History
 
-## v1.1.0
+### v1.1.0
 Added
 Folder drag-and-drop support
 Recursive folder scanning
@@ -116,14 +116,14 @@ JPEG export handling
 AVIF export handling
 Output format selection behaviour
 Smart output folder workflow
-## v1.0.1
+### v1.0.1
 Fixed
 PNG export now correctly saves PNG files
 JPEG export now correctly saves JPEG files
 AVIF export now correctly saves AVIF files
 Output format selection now correctly respects the user's chosen format
 General stability improvements
-## v1.0.0
+### v1.0.0
 
 Initial public release.
 
