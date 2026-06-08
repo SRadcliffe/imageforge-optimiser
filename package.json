@@ -1,8 +1,8 @@
 {
   "name": "imageforge-optimiser",
   "version": "1.0.1",
-  "description": "Drag-and-drop desktop image optimiser for ForgeWorks Studio.",
-  "author": "ForgeWorks Studio",
+  "description": "A lightweight desktop image optimisation tool for WebP, JPEG, PNG and AVIF.",
+  "author": "Simon Radcliffe",
   "productName": "ImageForge Optimiser",
   "main": "src/main.js",
   "license": "UNLICENSED",
