@@ -18,35 +18,50 @@ web developers and anyone who needs fast, simple image optimisation.
 
 ## Features
 
-Drag & Drop image processing
-Drag & Drop folder processing
-Recursive folder scanning
-Batch image optimisation
-Smart automatic output folders
-Automatic creation of an Optimised folder beside source images
-Modern dark user interface
-WebP export
-JPEG export
-PNG export
-AVIF export
-Adjustable quality settings
-Lossless mode
-File size savings reporting
-Batch processing statistics
-Portable version available
-Windows desktop application
-Supported Formats
-Input Formats
-PNG
-JPG
-JPEG
-WebP
-AVIF
-Output Formats
-PNG
-JPEG
-WebP
-AVIF
+* Drag & Drop image processing
+* Drag & Drop folder processing
+* Recursive folder scanning
+* Batch image optimisation
+* Smart automatic output folders
+* Automatic creation of an Optimised folder beside source images
+* Modern dark user interface
+* WebP export
+* JPEG export
+* PNG export
+* AVIF export
+* Adjustable quality settings
+* Lossless mode
+* File size savings reporting
+* Batch processing statistics
+* Portable version available
+* Windows desktop application
+
+---
+
+## Built With
+
+* Electron
+* Sharp
+* Electron Builder
+* JavaScript
+* HTML
+* CSS
+
+---
+
+## Roadmap
+
+Planned improvements:
+
+* Image thumbnails
+* Before/After image comparison
+* Sortable results table
+* Status badges
+* Watch folder mode
+* Windows right-click integration
+* Additional export presets
+* Compression estimation
+
 
 ## Download
 
@@ -126,24 +141,6 @@ General stability improvements
 ### v1.0.0
 
 Initial public release.
-
-## Features
-Batch image optimisation
-WebP support
-PNG support
-JPEG support
-AVIF support
-Quality controls
-Lossless mode
-Windows installer
-Built With
-Electron
-Sharp
-Electron Builder
-JavaScript
-HTML
-CSS
-Roadmap
 
 ## Planned improvements:
 
