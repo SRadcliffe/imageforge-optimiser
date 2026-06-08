@@ -51,6 +51,7 @@ app.on('activate', () => {
 });
 
 const allowedExt = new Set(['.jpg', '.jpeg', '.png', '.webp', '.tif', '.tiff', '.avif']);
+const outputFormats = new Set(['jpeg', 'png', 'webp', 'avif']);
 
 function isImage(filePath) {
   return allowedExt.has(path.extname(filePath).toLowerCase());
@@ -61,6 +62,24 @@ function formatBytes(bytes) {
   const units = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
   return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 2)} ${units[i]}`;
+}
+
+function normaliseFormat(format, fallback = 'webp') {
+  const value = String(format || '').toLowerCase();
+  const normalised = value === 'jpg' ? 'jpeg' : value;
+  const normalisedFallback = fallback === 'jpg' ? 'jpeg' : fallback;
+
+  if (outputFormats.has(normalised)) return normalised;
+  if (outputFormats.has(normalisedFallback)) return normalisedFallback;
+  return 'webp';
+}
+
+function resolveOutputFormat(selectedFormat) {
+  return normaliseFormat(selectedFormat);
+}
+
+function extensionForFormat(format) {
+  return format === 'jpeg' ? '.jpg' : `.${format}`;
 }
 
 function getPresetOptions(settings) {
@@ -106,7 +125,12 @@ function getPresetOptions(settings) {
     }
   };
 
-  return presets[preset] || presets['web-ready'];
+  const selectedPreset = presets[preset] || presets['web-ready'];
+
+  return {
+    ...selectedPreset,
+    format: normaliseFormat(settings.format, selectedPreset.format)
+  };
 }
 
 async function chooseOutputFolder() {
@@ -173,10 +197,8 @@ ipcMain.handle('optimise-images', async (_event, payload) => {
   for (const file of files) {
     const originalStat = fs.statSync(file);
     const parsed = path.parse(file);
-    const inputExt = parsed.ext.toLowerCase().replace('.', '');
-    const format = preset.format === 'original' ? inputExt : preset.format;
-    const safeFormat = format === 'jpg' ? 'jpeg' : format;
-    const outputExt = safeFormat === 'jpeg' ? '.jpg' : `.${safeFormat}`;
+    const safeFormat = resolveOutputFormat(preset.format);
+    const outputExt = extensionForFormat(safeFormat);
     const suffix = settings.keepFilename ? '' : preset.suffix;
     const outPath = path.join(outputFolder, `${parsed.name}${suffix}${outputExt}`);
 
@@ -201,10 +223,8 @@ ipcMain.handle('optimise-images', async (_event, payload) => {
       pipeline = pipeline.png({ compressionLevel: 9, adaptiveFiltering: true, palette: !preset.lossless });
     } else if (safeFormat === 'avif') {
       pipeline = pipeline.avif({ quality: preset.quality, lossless: preset.lossless, effort: 6 });
-    } else if (safeFormat === 'tiff') {
-      pipeline = pipeline.tiff({ quality: preset.quality, compression: 'lzw' });
     } else {
-      pipeline = pipeline.webp({ quality: preset.quality, lossless: preset.lossless, effort: 6 });
+      throw new Error(`Unsupported output format: ${safeFormat}`);
     }
 
     await pipeline.toFile(outPath);

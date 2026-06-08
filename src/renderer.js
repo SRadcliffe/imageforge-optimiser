@@ -28,6 +28,7 @@ const optimisedTotalEl = document.getElementById('optimisedTotal');
 const savedTotalEl = document.getElementById('savedTotal');
 const savedPercentEl = document.getElementById('savedPercent');
 const formatButtons = Array.from(document.querySelectorAll('.format-btn'));
+const validFormats = new Set(['webp', 'jpeg', 'png', 'avif']);
 
 let files = [];
 let latestOutputFolder = null;
@@ -139,11 +140,20 @@ function syncFormatButtons() {
   formatButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.format === formatEl.value));
 }
 
+function setFormat(format) {
+  const nextFormat = validFormats.has(format) ? format : 'webp';
+  formatEl.value = nextFormat;
+  syncFormatButtons();
+}
+
 formatButtons.forEach(button => {
   button.addEventListener('click', () => {
-    formatEl.value = button.dataset.format;
-    syncFormatButtons();
+    setFormat(button.dataset.format);
   });
+});
+
+formatEl.addEventListener('change', () => {
+  setFormat(formatEl.value);
 });
 
 qualityEl.addEventListener('input', () => { qualityNumberEl.value = qualityEl.value; });
@@ -229,15 +239,13 @@ presetEl.addEventListener('change', () => {
 
   const preset = presets[presetEl.value];
   if (preset) {
-    formatEl.value = preset.format;
+    setFormat(preset.format);
     qualityEl.value = preset.quality;
     qualityNumberEl.value = preset.quality;
     maxWidthEl.value = preset.maxWidth;
     losslessEl.checked = preset.lossless;
     keepMetadataEl.checked = preset.keepMetadata;
   }
-
-  syncFormatButtons();
 });
 
 optimiseBtn.addEventListener('click', async () => {
@@ -253,6 +261,7 @@ optimiseBtn.addEventListener('click', async () => {
 
     optimiseBtn.disabled = true;
     statusText.textContent = 'Optimising images...';
+    setFormat(formatEl.value);
 
     const settings = {
       preset: presetEl.value,
