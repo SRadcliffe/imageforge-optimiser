@@ -1,6 +1,6 @@
 {
   "name": "imageforge-optimiser",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "A lightweight desktop image optimisation tool for WebP, JPEG, PNG and AVIF.",
   "author": "Simon Radcliffe",
   "productName": "ImageForge Optimiser",
@@ -25,7 +25,6 @@
     "appId": "uk.forgeworks.imageforgeoptimiser",
     "productName": "ImageForge Optimiser",
     "executableName": "ImageForge Optimiser",
-    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -42,15 +41,20 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
     "nsis": {
+      "artifactName": "ImageForge-Optimiser-Setup-${version}.${ext}",
       "oneClick": false,
       "perMachine": false,
       "allowElevation": true,
@@ -59,6 +63,9 @@
       "createStartMenuShortcut": true,
       "shortcutName": "ImageForge Optimiser",
       "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "ImageForge-Optimiser-Portable-${version}.${ext}"
     }
   }
 }

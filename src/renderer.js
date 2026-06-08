@@ -7,12 +7,15 @@ const selectFolderBtn = document.getElementById('selectFolderBtn');
 const optimiseBtn = document.getElementById('optimiseBtn');
 const openFolderBtn = document.getElementById('openFolderBtn');
 const outputFolderInput = document.getElementById('outputFolder');
+const useSourceOutputFolderEl = document.getElementById('useSourceOutputFolder');
 const statusText = document.getElementById('statusText');
 const aboutBtn = document.getElementById('aboutBtn');
 const aboutModal = document.getElementById('aboutModal');
 const closeAboutBtn = document.getElementById('closeAboutBtn');
+const aboutVersionEl = document.getElementById('aboutVersion');
 
 const presetEl = document.getElementById('preset');
+const presetDescriptionEl = document.getElementById('presetDescription');
 const formatEl = document.getElementById('format');
 const qualityEl = document.getElementById('quality');
 const qualityNumberEl = document.getElementById('qualityNumber');
@@ -28,11 +31,25 @@ const optimisedTotalEl = document.getElementById('optimisedTotal');
 const savedTotalEl = document.getElementById('savedTotal');
 const savedPercentEl = document.getElementById('savedPercent');
 const formatButtons = Array.from(document.querySelectorAll('.format-btn'));
+const sortButtons = Array.from(document.querySelectorAll('.sort-header'));
 const validFormats = new Set(['webp', 'jpeg', 'png', 'avif']);
+
+const presetDescriptions = {
+  'web-ready': 'Balanced optimisation for websites and general sharing.',
+  smallest: 'Maximum compression for the smallest practical file size.',
+  'high-quality': 'Light compression while preserving visual quality.',
+  lossless: 'No quality loss where supported by the selected format.',
+  custom: 'Manual control over format, quality and output settings.'
+};
 
 let files = [];
 let latestOutputFolder = null;
 let fileStats = new Map();
+let fileSources = new Map();
+let currentRows = [];
+let rowMode = 'pending';
+let sortState = { key: 'name', direction: 'asc' };
+let manualOutputFolder = '';
 
 function escapeHtml(str) {
   return String(str).replace(/[&<>'"]/g, char => ({
@@ -44,6 +61,21 @@ function fileName(filePath) {
   return String(filePath).split(/[\\/]/).pop();
 }
 
+function folderName(filePath) {
+  const value = String(filePath);
+  const index = Math.max(value.lastIndexOf('\\'), value.lastIndexOf('/'));
+  return index > -1 ? value.slice(0, index) : '';
+}
+
+function joinPath(folderPath, childName) {
+  const separator = String(folderPath).includes('\\') ? '\\' : '/';
+  return `${String(folderPath).replace(/[\\/]+$/, '')}${separator}${childName}`;
+}
+
+function dedupeKey(filePath) {
+  return String(filePath).toLowerCase();
+}
+
 function formatBytes(bytes) {
   if (!bytes || bytes <= 0) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB'];
@@ -51,36 +83,76 @@ function formatBytes(bytes) {
   return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 2)} ${units[i]}`;
 }
 
-function renderTable(rows = []) {
+function statusBadge(status) {
+  const normalised = String(status || 'Pending').toLowerCase().replace(/\s+/g, '-');
+  const allowed = new Set(['optimised', 'pending', 'processing', 'failed', 'skipped']);
+  const className = allowed.has(normalised) ? normalised : 'pending';
+  return `<span class="status-badge status-${className}">${escapeHtml(status || 'Pending')}</span>`;
+}
+
+function pendingRows(status = 'Pending') {
+  return files.map(file => ({
+    file,
+    output: file,
+    name: fileName(file),
+    outputName: fileName(file),
+    originalBytes: fileStats.get(file)?.bytes || 0,
+    optimisedBytes: 0,
+    savedPercent: 0,
+    originalSize: fileStats.get(file)?.size || 'Pending',
+    optimisedSize: 'Pending',
+    savedSize: 'Pending',
+    status
+  }));
+}
+
+function valueForSort(row, key) {
+  if (key === 'name') return String(row.name || row.outputName || '').toLowerCase();
+  if (key === 'status') return String(row.status || '').toLowerCase();
+  return Number(row[key]) || 0;
+}
+
+function sortedRows(rows) {
+  const direction = sortState.direction === 'asc' ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    const first = valueForSort(a, sortState.key);
+    const second = valueForSort(b, sortState.key);
+
+    if (typeof first === 'string' || typeof second === 'string') {
+      return String(first).localeCompare(String(second), undefined, { numeric: true }) * direction;
+    }
+
+    return (first - second) * direction;
+  });
+}
+
+function updateSortIndicators() {
+  sortButtons.forEach(button => {
+    button.classList.toggle('sorted-asc', button.dataset.sort === sortState.key && sortState.direction === 'asc');
+    button.classList.toggle('sorted-desc', button.dataset.sort === sortState.key && sortState.direction === 'desc');
+  });
+}
+
+function renderTable(rows = currentRows, mode = rowMode) {
+  currentRows = rows;
+  rowMode = mode;
   emptyState.classList.toggle('hidden', files.length || rows.length);
+  updateSortIndicators();
 
   if (!files.length && !rows.length) {
     fileTable.innerHTML = '';
     return;
   }
 
-  if (!rows.length) {
-    fileTable.innerHTML = files.map((file, index) => `
-      <tr>
-        <td>${index + 1}</td>
-        <td title="${escapeHtml(file)}">${escapeHtml(fileName(file))}</td>
-        <td>${fileStats.get(file)?.size || 'Pending'}</td>
-        <td>Pending</td>
-        <td>Pending</td>
-        <td>Queued</td>
-      </tr>
-    `).join('');
-    return;
-  }
-
-  fileTable.innerHTML = rows.map((row, index) => `
+  const displayRows = sortedRows(rows.length ? rows : pendingRows());
+  fileTable.innerHTML = displayRows.map((row, index) => `
     <tr>
       <td>${index + 1}</td>
-      <td title="${escapeHtml(row.output)}">${escapeHtml(row.outputName)}</td>
+      <td title="${escapeHtml(row.output || row.file)}">${escapeHtml(mode === 'results' ? row.outputName : row.name)}</td>
       <td>${row.originalSize}</td>
       <td>${row.optimisedSize}</td>
-      <td>${row.savedPercent}%</td>
-      <td>${row.status}</td>
+      <td>${mode === 'results' ? `${row.savedPercent}%` : row.savedSize}</td>
+      <td>${statusBadge(row.status)}</td>
     </tr>
   `).join('');
 }
@@ -106,6 +178,74 @@ function normaliseIncoming(input) {
   return Array.from(input).map(file => file.path).filter(Boolean);
 }
 
+function readAllDirectoryEntries(reader) {
+  return new Promise((resolve, reject) => {
+    const entries = [];
+
+    function readBatch() {
+      reader.readEntries(batch => {
+        if (!batch.length) {
+          resolve(entries);
+          return;
+        }
+
+        entries.push(...batch);
+        readBatch();
+      }, reject);
+    }
+
+    readBatch();
+  });
+}
+
+function fileFromEntry(entry) {
+  return new Promise(resolve => {
+    entry.file(file => resolve(file.path), () => resolve(null));
+  });
+}
+
+async function pathsFromEntry(entry) {
+  try {
+    if (!entry) return [];
+    if (entry.isFile) {
+      const filePath = await fileFromEntry(entry);
+      return filePath ? [filePath] : [];
+    }
+
+    if (!entry.isDirectory) return [];
+    const entries = await readAllDirectoryEntries(entry.createReader());
+    const nested = await Promise.all(entries.map(pathsFromEntry));
+    return nested.flat();
+  } catch (_error) {
+    return [];
+  }
+}
+
+async function normaliseDroppedItems(dataTransfer) {
+  const directPaths = normaliseIncoming(dataTransfer.files);
+  if (directPaths.length) return directPaths;
+
+  const items = Array.from(dataTransfer.items || []);
+  const entries = items
+    .map(item => (typeof item.webkitGetAsEntry === 'function' ? item.webkitGetAsEntry() : null))
+    .filter(Boolean);
+
+  if (!entries.length) return normaliseIncoming(dataTransfer.files);
+
+  const paths = await Promise.all(entries.map(pathsFromEntry));
+  return paths.flat();
+}
+
+async function resolveSupportedFiles(input) {
+  const incoming = normaliseIncoming(input);
+  if (!incoming.length) return [];
+  const details = await window.imageForge.resolveInputPathDetails(incoming);
+  return details.map(row => ({
+    file: row.file,
+    sourceFolder: row.sourceFolder || folderName(row.file)
+  }));
+}
+
 async function updateOriginalTotals() {
   if (!files.length) {
     fileStats = new Map();
@@ -127,13 +267,27 @@ async function updateOriginalTotals() {
 }
 
 async function addFiles(input) {
-  const incoming = normaliseIncoming(input);
-  const unique = new Set([...files, ...incoming]);
-  files = Array.from(unique);
+  const incoming = await resolveSupportedFiles(input);
+  const seen = new Set(files.map(dedupeKey));
+  const additions = incoming.filter(file => {
+    const key = dedupeKey(file.file);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  additions.forEach(row => {
+    fileSources.set(row.file, row.sourceFolder || folderName(row.file));
+  });
+
+  files = [...files, ...additions.map(row => row.file)];
+  currentRows = [];
+  rowMode = 'pending';
   imageCountInlineEl.textContent = files.length;
   statusText.textContent = files.length ? `${files.length} image(s) queued.` : 'Ready.';
   await updateOriginalTotals();
-  renderTable();
+  updateOutputFolderDisplay();
+  renderTable(pendingRows(), 'pending');
 }
 
 function syncFormatButtons() {
@@ -145,6 +299,61 @@ function setFormat(format) {
   formatEl.value = nextFormat;
   syncFormatButtons();
 }
+
+function updatePresetDescription() {
+  presetDescriptionEl.textContent = presetDescriptions[presetEl.value] || presetDescriptions.custom;
+}
+
+function sourceFolders() {
+  const folders = new Map();
+  files.forEach(file => {
+    const folder = fileSources.get(file) || folderName(file);
+    if (!folder) return;
+    folders.set(folder.toLowerCase(), folder);
+  });
+  return Array.from(folders.values());
+}
+
+function sourceOutputFolder() {
+  const folders = sourceFolders();
+  return folders.length === 1 ? joinPath(folders[0], 'Optimised') : '';
+}
+
+function activeOutputFolder() {
+  const sourceFolder = sourceOutputFolder();
+  if (useSourceOutputFolderEl.checked) return sourceFolder;
+  return manualOutputFolder;
+}
+
+function updateOutputFolderDisplay() {
+  const sourceFolder = sourceOutputFolder();
+  const shouldUseSourceFolder = useSourceOutputFolderEl.checked && Boolean(sourceFolder);
+
+  outputFolderInput.value = activeOutputFolder();
+  selectFolderBtn.disabled = shouldUseSourceFolder;
+  outputFolderInput.placeholder = useSourceOutputFolderEl.checked && !sourceFolder && files.length
+    ? 'Images from multiple folders require a manual output folder.'
+    : 'Choose output folder...';
+}
+
+function updateSummary(totals) {
+  imageCountInlineEl.textContent = totals.processedCount;
+  originalTotalEl.textContent = totals.originalSize;
+  optimisedTotalEl.textContent = totals.optimisedSize;
+  savedTotalEl.textContent = totals.savedSize;
+  savedPercentEl.textContent = `${totals.savedPercent}%`;
+}
+
+sortButtons.forEach(button => {
+  button.addEventListener('click', () => {
+    const key = button.dataset.sort;
+    sortState = {
+      key,
+      direction: sortState.key === key && sortState.direction === 'asc' ? 'desc' : 'asc'
+    };
+    renderTable();
+  });
+});
 
 formatButtons.forEach(button => {
   button.addEventListener('click', () => {
@@ -181,26 +390,41 @@ addImagesBtn.addEventListener('click', async () => {
 });
 
 dropZone.addEventListener('drop', async event => {
-  await addFiles(event.dataTransfer.files);
+  const droppedPaths = await normaliseDroppedItems(event.dataTransfer);
+  await addFiles(droppedPaths);
 });
 
 clearBtn.addEventListener('click', () => {
   files = [];
   fileStats = new Map();
+  fileSources = new Map();
+  currentRows = [];
+  rowMode = 'pending';
   latestOutputFolder = null;
+  manualOutputFolder = '';
   openFolderBtn.disabled = true;
   statusText.textContent = 'Ready.';
   imageCountInlineEl.textContent = '0';
   resetTotals('0 B');
-  renderTable();
+  updateOutputFolderDisplay();
+  renderTable([], 'pending');
 });
 
 selectFolderBtn.addEventListener('click', async () => {
   const folder = await window.imageForge.selectOutputFolder();
-  if (folder) outputFolderInput.value = folder;
+  if (folder) {
+    manualOutputFolder = folder;
+    updateOutputFolderDisplay();
+  }
+});
+
+useSourceOutputFolderEl.addEventListener('change', () => {
+  updateOutputFolderDisplay();
 });
 
 presetEl.addEventListener('change', () => {
+  updatePresetDescription();
+
   if (presetEl.value === 'custom') {
     syncFormatButtons();
     return;
@@ -254,14 +478,20 @@ optimiseBtn.addEventListener('click', async () => {
       statusText.textContent = 'Drop some images first.';
       return;
     }
-    if (!outputFolderInput.value) {
-      statusText.textContent = 'Choose an output folder first.';
+    const smartOutputFolder = sourceOutputFolder();
+    const outputFolder = useSourceOutputFolderEl.checked ? smartOutputFolder : manualOutputFolder;
+
+    if (!outputFolder) {
+      statusText.textContent = useSourceOutputFolderEl.checked
+        ? 'Images from multiple folders require a manual output folder.'
+        : 'Please choose an output folder.';
       return;
     }
 
     optimiseBtn.disabled = true;
     statusText.textContent = 'Optimising images...';
     setFormat(formatEl.value);
+    renderTable(pendingRows('Processing'), 'pending');
 
     const settings = {
       preset: presetEl.value,
@@ -272,21 +502,19 @@ optimiseBtn.addEventListener('click', async () => {
       keepFilename: keepFilenameEl.checked,
       lossless: losslessEl.checked,
       keepMetadata: keepMetadataEl.checked,
-      outputFolder: outputFolderInput.value
+      useSourceOutputFolder: useSourceOutputFolderEl.checked,
+      outputFolder
     };
 
     const output = await window.imageForge.optimiseImages({ files, settings });
     latestOutputFolder = output.outputFolder;
     openFolderBtn.disabled = false;
 
-    imageCountInlineEl.textContent = output.results.length;
-    originalTotalEl.textContent = output.totals.originalSize;
-    optimisedTotalEl.textContent = output.totals.optimisedSize;
-    savedTotalEl.textContent = output.totals.savedSize;
-    savedPercentEl.textContent = `${output.totals.savedPercent}%`;
+    updateSummary(output.totals);
+    renderTable(output.results, 'results');
 
-    renderTable(output.results);
-    statusText.textContent = `Complete. Saved ${output.totals.savedSize} (${output.totals.savedPercent}%).`;
+    const failedCopy = output.totals.failedCount ? ` Failed: ${output.totals.failedCount}.` : '';
+    statusText.textContent = `Complete. Saved ${output.totals.savedSize} (${output.totals.averageReduction}% average).${failedCopy}`;
   } catch (error) {
     statusText.textContent = error.message || 'Something went wrong.';
   } finally {
@@ -314,5 +542,18 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape') aboutModal.classList.add('hidden');
 });
 
+async function initialiseVersion() {
+  try {
+    const version = await window.imageForge.getAppVersion();
+    aboutVersionEl.textContent = `Version ${version}`;
+  } catch (_error) {
+    aboutVersionEl.textContent = 'Version 1.1.0';
+  }
+}
+
 syncFormatButtons();
+updatePresetDescription();
+updateSortIndicators();
+updateOutputFolderDisplay();
+initialiseVersion();
 renderTable();

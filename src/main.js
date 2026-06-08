@@ -50,11 +50,136 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
-const allowedExt = new Set(['.jpg', '.jpeg', '.png', '.webp', '.tif', '.tiff', '.avif']);
+const allowedExt = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif']);
 const outputFormats = new Set(['jpeg', 'png', 'webp', 'avif']);
 
 function isImage(filePath) {
   return allowedExt.has(path.extname(filePath).toLowerCase());
+}
+
+function scanInputPath(inputPath, found = []) {
+  try {
+    if (!inputPath || !fs.existsSync(inputPath)) return found;
+
+    const stat = fs.statSync(inputPath);
+    if (stat.isDirectory()) {
+      const entries = fs.readdirSync(inputPath, { withFileTypes: true });
+      for (const entry of entries) {
+        scanInputPath(path.join(inputPath, entry.name), found);
+      }
+      return found;
+    }
+
+    if (stat.isFile() && isImage(inputPath)) {
+      found.push(inputPath);
+    }
+  } catch (_error) {
+    return found;
+  }
+
+  return found;
+}
+
+function scanInputPathDetails(inputPath, sourceFolder = null, found = []) {
+  try {
+    if (!inputPath || !fs.existsSync(inputPath)) return found;
+
+    const stat = fs.statSync(inputPath);
+    if (stat.isDirectory()) {
+      const rootFolder = sourceFolder || inputPath;
+      const entries = fs.readdirSync(inputPath, { withFileTypes: true });
+      for (const entry of entries) {
+        scanInputPathDetails(path.join(inputPath, entry.name), rootFolder, found);
+      }
+      return found;
+    }
+
+    if (stat.isFile() && isImage(inputPath)) {
+      found.push({
+        file: inputPath,
+        sourceFolder: sourceFolder || path.dirname(inputPath)
+      });
+    }
+  } catch (_error) {
+    return found;
+  }
+
+  return found;
+}
+
+function resolveInputPaths(inputPaths = []) {
+  const seen = new Set();
+  const resolved = [];
+
+  for (const inputPath of inputPaths) {
+    const matches = scanInputPath(inputPath);
+    for (const filePath of matches) {
+      const key = process.platform === 'win32' ? filePath.toLowerCase() : filePath;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      resolved.push(filePath);
+    }
+  }
+
+  return resolved;
+}
+
+function resolveInputPathDetails(inputPaths = []) {
+  const seen = new Set();
+  const rows = [];
+
+  for (const inputPath of inputPaths) {
+    const matches = scanInputPathDetails(inputPath);
+    for (const row of matches) {
+      const key = normalisePathKey(row.file);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      rows.push(row);
+    }
+  }
+
+  return rows;
+}
+
+function normalisePathKey(filePath) {
+  return process.platform === 'win32' ? String(filePath).toLowerCase() : String(filePath);
+}
+
+function resolveSourceOutputFolder(files = []) {
+  const folders = new Map();
+
+  for (const file of files) {
+    const folder = path.dirname(file);
+    folders.set(normalisePathKey(folder), folder);
+  }
+
+  if (folders.size !== 1) return null;
+  return path.join(Array.from(folders.values())[0], 'Optimised');
+}
+
+function resolveActiveOutputFolder(files, settings) {
+  if (settings.useSourceOutputFolder) {
+    if (settings.outputFolder) return settings.outputFolder;
+
+    const sourceOutputFolder = resolveSourceOutputFolder(files);
+    if (sourceOutputFolder) return sourceOutputFolder;
+
+    return null;
+  }
+
+  return settings.outputFolder || null;
+}
+
+function resolveOutputPath(file, outputFolder, outputExt, suffix, keepFilename) {
+  const parsed = path.parse(file);
+  let outPath = path.join(outputFolder, `${parsed.name}${keepFilename ? '' : suffix}${outputExt}`);
+
+  if (normalisePathKey(outPath) === normalisePathKey(file)) {
+    const safeSuffix = suffix || '_optimised';
+    outPath = path.join(outputFolder, `${parsed.name}${safeSuffix}${outputExt}`);
+  }
+
+  return outPath;
 }
 
 function formatBytes(bytes) {
@@ -146,7 +271,7 @@ async function chooseImages() {
   const result = await dialog.showOpenDialog({
     properties: ['openFile', 'multiSelections'],
     filters: [
-      { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'tif', 'tiff', 'avif'] }
+      { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'avif'] }
     ]
   });
   if (result.canceled || !result.filePaths.length) return [];
@@ -157,8 +282,18 @@ ipcMain.handle('select-images', chooseImages);
 
 ipcMain.handle('select-output-folder', chooseOutputFolder);
 
+ipcMain.handle('resolve-input-paths', async (_event, inputPaths = []) => {
+  return resolveInputPaths(inputPaths);
+});
+
+ipcMain.handle('resolve-input-path-details', async (_event, inputPaths = []) => {
+  return resolveInputPathDetails(inputPaths);
+});
+
+ipcMain.handle('get-app-version', () => app.getVersion());
+
 ipcMain.handle('get-file-stats', async (_event, filePaths = []) => {
-  const rows = filePaths.filter(isImage).map(file => {
+  const rows = resolveInputPaths(filePaths).map(file => {
     const stat = fs.statSync(file);
     return {
       file,
@@ -182,9 +317,9 @@ ipcMain.handle('open-folder', async (_event, folderPath) => {
 });
 
 ipcMain.handle('optimise-images', async (_event, payload) => {
-  const files = (payload.files || []).filter(isImage);
+  const files = resolveInputPaths(payload.files || []);
   const settings = payload.settings || {};
-  const outputFolder = settings.outputFolder;
+  const outputFolder = resolveActiveOutputFolder(files, settings);
 
   if (!files.length) throw new Error('No supported image files were provided.');
   if (!outputFolder) throw new Error('Please choose an output folder.');
@@ -195,74 +330,100 @@ ipcMain.handle('optimise-images', async (_event, payload) => {
   const results = [];
 
   for (const file of files) {
-    const originalStat = fs.statSync(file);
-    const parsed = path.parse(file);
     const safeFormat = resolveOutputFormat(preset.format);
     const outputExt = extensionForFormat(safeFormat);
-    const suffix = settings.keepFilename ? '' : preset.suffix;
-    const outPath = path.join(outputFolder, `${parsed.name}${suffix}${outputExt}`);
+    const outPath = resolveOutputPath(file, outputFolder, outputExt, preset.suffix, settings.keepFilename);
 
-    let pipeline = sharp(file, { animated: false }).rotate();
-    const meta = await pipeline.metadata();
+    try {
+      const originalStat = fs.statSync(file);
+      let pipeline = sharp(file, { animated: false }).rotate();
+      const meta = await pipeline.metadata();
 
-    if (preset.maxWidth && meta.width && meta.width > preset.maxWidth) {
-      pipeline = pipeline.resize({ width: preset.maxWidth, withoutEnlargement: true });
+      if (preset.maxWidth && meta.width && meta.width > preset.maxWidth) {
+        pipeline = pipeline.resize({ width: preset.maxWidth, withoutEnlargement: true });
+      }
+
+      if (!settings.keepMetadata) {
+        // Default sharp behaviour strips most metadata unless withMetadata() is called.
+      } else {
+        pipeline = pipeline.withMetadata();
+      }
+
+      if (safeFormat === 'webp') {
+        pipeline = pipeline.webp({ quality: preset.quality, lossless: preset.lossless, effort: 6 });
+      } else if (safeFormat === 'jpeg') {
+        pipeline = pipeline.jpeg({ quality: preset.quality, progressive: true, mozjpeg: true });
+      } else if (safeFormat === 'png') {
+        pipeline = pipeline.png({ compressionLevel: 9, adaptiveFiltering: true, palette: !preset.lossless });
+      } else if (safeFormat === 'avif') {
+        pipeline = pipeline.avif({ quality: preset.quality, lossless: preset.lossless, effort: 6 });
+      } else {
+        throw new Error(`Unsupported output format: ${safeFormat}`);
+      }
+
+      await pipeline.toFile(outPath);
+      const optimisedStat = fs.statSync(outPath);
+      const saved = originalStat.size - optimisedStat.size;
+      const savedPercent = originalStat.size > 0 ? (saved / originalStat.size) * 100 : 0;
+
+      results.push({
+        file,
+        output: outPath,
+        name: path.basename(file),
+        outputName: path.basename(outPath),
+        originalBytes: originalStat.size,
+        optimisedBytes: optimisedStat.size,
+        originalSize: formatBytes(originalStat.size),
+        optimisedSize: formatBytes(optimisedStat.size),
+        savedBytes: saved,
+        savedSize: formatBytes(Math.max(0, saved)),
+        savedPercent: Number(savedPercent.toFixed(1)),
+        status: saved >= 0 ? 'Optimised' : 'Skipped'
+      });
+    } catch (error) {
+      const originalBytes = fs.existsSync(file) ? fs.statSync(file).size : 0;
+
+      results.push({
+        file,
+        output: file,
+        name: path.basename(file),
+        outputName: path.basename(file),
+        originalBytes,
+        optimisedBytes: 0,
+        originalSize: formatBytes(originalBytes),
+        optimisedSize: '0 B',
+        savedBytes: 0,
+        savedSize: '0 B',
+        savedPercent: 0,
+        status: 'Failed',
+        error: error.message || 'Optimisation failed.'
+      });
     }
-
-    if (!settings.keepMetadata) {
-      // Default sharp behaviour strips most metadata unless withMetadata() is called.
-    } else {
-      pipeline = pipeline.withMetadata();
-    }
-
-    if (safeFormat === 'webp') {
-      pipeline = pipeline.webp({ quality: preset.quality, lossless: preset.lossless, effort: 6 });
-    } else if (safeFormat === 'jpeg') {
-      pipeline = pipeline.jpeg({ quality: preset.quality, progressive: true, mozjpeg: true });
-    } else if (safeFormat === 'png') {
-      pipeline = pipeline.png({ compressionLevel: 9, adaptiveFiltering: true, palette: !preset.lossless });
-    } else if (safeFormat === 'avif') {
-      pipeline = pipeline.avif({ quality: preset.quality, lossless: preset.lossless, effort: 6 });
-    } else {
-      throw new Error(`Unsupported output format: ${safeFormat}`);
-    }
-
-    await pipeline.toFile(outPath);
-    const optimisedStat = fs.statSync(outPath);
-    const saved = originalStat.size - optimisedStat.size;
-    const savedPercent = originalStat.size > 0 ? (saved / originalStat.size) * 100 : 0;
-
-    results.push({
-      file,
-      output: outPath,
-      name: path.basename(file),
-      outputName: path.basename(outPath),
-      originalBytes: originalStat.size,
-      optimisedBytes: optimisedStat.size,
-      originalSize: formatBytes(originalStat.size),
-      optimisedSize: formatBytes(optimisedStat.size),
-      savedBytes: saved,
-      savedSize: formatBytes(Math.max(0, saved)),
-      savedPercent: Number(savedPercent.toFixed(1)),
-      status: saved >= 0 ? 'Optimised' : 'Larger than original'
-    });
   }
 
+  const completedResults = results.filter(item => item.status !== 'Failed');
+  const failedCount = results.length - completedResults.length;
   const totalOriginal = results.reduce((sum, item) => sum + item.originalBytes, 0);
-  const totalOptimised = results.reduce((sum, item) => sum + item.optimisedBytes, 0);
-  const totalSaved = totalOriginal - totalOptimised;
+  const totalOptimised = completedResults.reduce((sum, item) => sum + item.optimisedBytes, 0);
+  const totalSaved = completedResults.reduce((sum, item) => sum + item.savedBytes, 0);
+  const averageReduction = completedResults.length
+    ? completedResults.reduce((sum, item) => sum + Math.max(0, item.savedPercent), 0) / completedResults.length
+    : 0;
 
   return {
     outputFolder,
     results,
     totals: {
+      processedCount: results.length,
+      failedCount,
       originalBytes: totalOriginal,
       optimisedBytes: totalOptimised,
       savedBytes: totalSaved,
       originalSize: formatBytes(totalOriginal),
       optimisedSize: formatBytes(totalOptimised),
       savedSize: formatBytes(Math.max(0, totalSaved)),
-      savedPercent: totalOriginal > 0 ? Number(((totalSaved / totalOriginal) * 100).toFixed(1)) : 0
+      savedPercent: totalOriginal > 0 ? Number(((totalSaved / totalOriginal) * 100).toFixed(1)) : 0,
+      averageReduction: Number(averageReduction.toFixed(1))
     }
   };
 });

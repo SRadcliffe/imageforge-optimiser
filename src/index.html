@@ -21,7 +21,7 @@
           <div class="drop-icon" aria-hidden="true">
             <span></span>
           </div>
-          <h2>Drag & Drop Images Here</h2>
+          <h2>Drag Images or Folders Here</h2>
         </section>
 
         <div class="action-row">
@@ -43,11 +43,11 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th>File Name</th>
-                <th>Original Size</th>
-                <th>New Size</th>
-                <th>Savings</th>
-                <th>Status</th>
+                <th><button class="sort-header" data-sort="name">File Name</button></th>
+                <th><button class="sort-header" data-sort="originalBytes">Original Size</button></th>
+                <th><button class="sort-header" data-sort="optimisedBytes">New Size</button></th>
+                <th><button class="sort-header" data-sort="savedPercent">Savings</button></th>
+                <th><button class="sort-header" data-sort="status">Status</button></th>
               </tr>
             </thead>
           </table>
@@ -82,6 +82,7 @@
             <option value="lossless">Lossless</option>
             <option value="custom">Custom</option>
           </select>
+          <small id="presetDescription" class="preset-description">Balanced optimisation for websites and general sharing.</small>
         </label>
 
         <div class="control-group">
@@ -138,6 +139,11 @@
 
         <div class="divider"></div>
 
+        <label class="check">
+          <input id="useSourceOutputFolder" type="checkbox" checked />
+          <span>Save to Optimised folder beside source images</span>
+        </label>
+
         <label>
           Output Folder
           <div class="folder-row">
@@ -147,15 +153,15 @@
         </label>
 
         <button id="optimiseBtn" class="primary">Optimise Images</button>
+        <button id="openFolderBtn" class="secondary" disabled>Open Folder</button>
       </aside>
     </section>
 
     <section class="stats" id="stats">
-      <div><span>Original Size</span><strong id="originalTotal">0 B</strong></div>
-      <div><span>New Size</span><strong id="optimisedTotal">0 B</strong></div>
+      <div><span>Original</span><strong id="originalTotal">0 B</strong></div>
+      <div><span>New</span><strong id="optimisedTotal">0 B</strong></div>
       <div><span>Saved</span><strong id="savedTotal">0 B</strong></div>
-      <div><span>Saved</span><strong id="savedPercent">0%</strong></div>
-      <button id="openFolderBtn" class="secondary" disabled>Open Output Folder</button>
+      <div><span>Reduction</span><strong id="savedPercent">0%</strong></div>
     </section>
 
     <footer class="footer">
@@ -167,7 +173,7 @@
       <div class="modal-card">
         <button id="closeAboutBtn" class="modal-close" aria-label="Close About dialog">×</button>
         <h2 id="aboutTitle">ImageForge Optimiser</h2>
-        <p>Version 1.0</p>
+        <p id="aboutVersion">Version</p>
         <p>Batch image optimisation tool.</p>
         <div class="modal-support">
           <span>Supports:</span>
