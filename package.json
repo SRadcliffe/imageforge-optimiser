@@ -1,0 +1,64 @@
+{
+  "name": "imageforge-optimiser",
+  "version": "1.0.0",
+  "description": "Drag-and-drop desktop image optimiser for ForgeWorks Studio.",
+  "author": "ForgeWorks Studio",
+  "productName": "ImageForge Optimiser",
+  "main": "src/main.js",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win nsis portable",
+    "dist:portable": "electron-builder --win portable"
+  },
+  "dependencies": {
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "uk.forgeworks.imageforgeoptimiser",
+    "productName": "ImageForge Optimiser",
+    "executableName": "ImageForge Optimiser",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/sharp/**/*"
+    ],
+    "win": {
+      "icon": "src/assets/favicon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ImageForge Optimiser",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

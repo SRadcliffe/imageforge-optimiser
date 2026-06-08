@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ImageForge Optimiser</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <img src="assets/logo.png" alt="ImageForge Optimiser" class="brand-logo" />
+      </div>
+    </header>
+
+    <section class="layout">
+      <section class="left-panel">
+        <section id="dropZone" class="drop-zone">
+          <div class="drop-icon" aria-hidden="true">
+            <span></span>
+          </div>
+          <h2>Drag & Drop Images Here</h2>
+        </section>
+
+        <div class="action-row">
+          <button id="addImagesBtn" class="secondary">＋ Add Images</button>
+          <button id="clearBtn" class="secondary">Clear All</button>
+          <div class="loaded-count"><strong id="imageCountInline">0</strong> Images</div>
+        </div>
+
+        <section class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>File Name</th>
+                <th>Original Size</th>
+                <th>New Size</th>
+                <th>Savings</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="fileTable"></tbody>
+          </table>
+          <div id="emptyState" class="empty-state">
+            <strong>Drop images here</strong>
+            <span>or click Add Images</span>
+            <small>Supported: PNG • JPG • WebP • AVIF</small>
+          </div>
+        </section>
+      </section>
+
+      <aside class="right-panel">
+        <label>
+          Preset
+          <select id="preset">
+            <option value="web-ready">Web Ready</option>
+            <option value="smallest">Smallest File</option>
+            <option value="high-quality">High Quality</option>
+            <option value="lossless">Lossless</option>
+            <option value="custom">Custom</option>
+          </select>
+        </label>
+
+        <div class="control-group">
+          <span class="label-title">Output Format</span>
+
+          <div class="format-grid">
+            <button class="format-btn active" data-format="webp">WebP</button>
+            <button class="format-btn" data-format="jpeg">JPEG</button>
+            <button class="format-btn" data-format="png">PNG</button>
+            <button class="format-btn" data-format="avif">AVIF</button>
+          </div>
+
+          <select id="format" class="hidden-select" aria-hidden="true">
+            <option value="webp" selected>WebP</option>
+            <option value="jpeg">JPEG</option>
+            <option value="png">PNG</option>
+            <option value="avif">AVIF</option>
+            <option value="original">Original where possible</option>
+          </select>
+        </div>
+
+        <label>
+          Quality
+          <div class="range-row">
+            <input id="quality" type="range" min="1" max="100" value="88" />
+            <input id="qualityNumber" type="number" min="1" max="100" value="88" />
+          </div>
+        </label>
+
+        <label class="check">
+          <input id="keepMetadata" type="checkbox" />
+          <span>Keep Metadata</span>
+        </label>
+
+        <label class="check">
+          <input id="keepFilename" type="checkbox" />
+          <span>Keep Original Filename</span>
+        </label>
+
+        <label>
+          Filename Suffix
+          <input id="filenameSuffix" type="text" value="_optimised" />
+        </label>
+
+        <label class="check">
+          <input id="lossless" type="checkbox" />
+          <span>Force Lossless</span>
+        </label>
+
+        <label class="hidden-field">
+          Max Width
+          <input id="maxWidth" type="number" min="0" value="2400" />
+        </label>
+
+        <div class="divider"></div>
+
+        <label>
+          Output Folder
+          <div class="folder-row">
+            <input id="outputFolder" readonly placeholder="Choose output folder..." />
+            <button id="selectFolderBtn" class="secondary">Browse</button>
+          </div>
+        </label>
+
+        <button id="optimiseBtn" class="primary">Optimise Images</button>
+      </aside>
+    </section>
+
+    <section class="stats" id="stats">
+      <div><span>Original Size</span><strong id="originalTotal">0 B</strong></div>
+      <div><span>New Size</span><strong id="optimisedTotal">0 B</strong></div>
+      <div><span>Saved</span><strong id="savedTotal">0 B</strong></div>
+      <div><span>Saved</span><strong id="savedPercent">0%</strong></div>
+      <button id="openFolderBtn" class="secondary" disabled>Open Output Folder</button>
+    </section>
+
+    <footer class="footer">
+      <p id="statusText">Ready.</p>
+      <button id="aboutBtn" class="footer-button">About</button>
+    </footer>
+
+    <div id="aboutModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+      <div class="modal-card">
+        <button id="closeAboutBtn" class="modal-close" aria-label="Close About dialog">×</button>
+        <h2 id="aboutTitle">ImageForge Optimiser</h2>
+        <p>Version 1.0</p>
+        <p>Batch image optimisation tool.</p>
+        <div class="modal-support">
+          <span>Supports:</span>
+          <strong>PNG</strong>
+          <strong>JPEG</strong>
+          <strong>WebP</strong>
+          <strong>AVIF</strong>
+        </div>
+        <p>Built by ForgeWorks Studio.</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
