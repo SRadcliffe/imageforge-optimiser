@@ -1,47 +1,116 @@
 # ImageForge Optimiser
 
-A drag-and-drop desktop image optimiser for ForgeWorks Studio.
+A lightweight desktop image optimisation tool for Windows.
 
-## Development
+ImageForge Optimiser helps reduce image file sizes while maintaining visual quality. It supports batch processing and modern image formats including WebP, AVIF, JPEG and PNG.
+
+---
+
+## Screenshot
+
+![ImageForge Optimiser](screenshots/imageforge-empty.png)
+
+---
+
+## Features
+
+* Drag and drop image optimisation
+* Batch processing
+* WebP support
+* AVIF support
+* JPEG optimisation
+* PNG optimisation
+* Lossless mode
+* Adjustable quality settings
+* Output folder selection
+* Windows desktop application
+* Fast processing powered by Sharp
+
+---
+
+## Supported Formats
+
+### Input
+
+* PNG
+* JPEG
+* JPG
+* WebP
+* AVIF
+
+### Output
+
+* PNG
+* JPEG
+* WebP
+* AVIF
+
+---
+
+## Installation
+
+### Windows
+
+Download the latest installer from the Releases section:
+
+https://github.com/SRadcliffe/imageforge-optimiser/releases
+
+---
+
+## Running From Source
 
 ```bash
 npm install
 npm start
 ```
 
-## Build a standalone Windows installer
+---
 
-Double-click:
-
-```text
-build-installer.bat
-```
-
-Or run manually:
+## Building
 
 ```bash
-npm install
 npm run dist:win
 ```
 
-The built files will appear in:
+Build output will be generated in:
 
 ```text
 release/
 ```
 
-You should get:
+---
 
-- `ImageForge Optimiser-1.0.0-win-x64.exe` installer
-- a portable `.exe` build
+## Tech Stack
 
-## Presets
+* Electron
+* Sharp
+* Electron Builder
+* JavaScript
+* HTML
+* CSS
 
-- Archive: lossless output, best quality, larger files
-- Portfolio: WebP/JPEG style output, visually clean, good for websites
-- Social: smaller files for quick upload and sharing
-- Custom: manual quality, dimensions, suffix and format
+---
 
-## Important note
+## Roadmap
 
-True artefact-free compression means lossless compression. The Portfolio and Social presets are visually optimised, but technically lossy if using JPEG/WebP/AVIF quality settings.
+* Thumbnail previews
+* Compression estimates
+* Additional export presets
+* Folder monitoring
+* Batch automation
+
+---
+
+## License
+
+MIT License
+
+---
+
+## Author
+
+Simon Radcliffe
+
+Creative Technologist
+
+https://siradcliffe.uk
