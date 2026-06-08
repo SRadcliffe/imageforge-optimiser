@@ -8,8 +8,6 @@ web developers and anyone who needs fast, simple image optimisation.
 
 ## Screenshot
 
-Replace these with your actual screenshots.
-
 ![ImageForge Optimiser](screenshots/imageforge-empty.png)
 
 ![Batch Processing](screenshots/imageforge-loaded.png)
@@ -18,9 +16,8 @@ Replace these with your actual screenshots.
 
 ---
 
-
-
 Features
+
 Drag & Drop image processing
 Drag & Drop folder processing
 Recursive folder scanning
@@ -50,25 +47,27 @@ PNG
 JPEG
 WebP
 AVIF
-Download
+
+## Download
 
 Download the latest Windows release from:
 
 https://github.com/SRadcliffe/imageforge-optimiser/releases
 
-Recommended Download
+### Recommended Download
 
-ImageForge-Optimiser-Portable-1.1.0.exe
+**ImageForge-Optimiser-Portable-1.1.0.exe**
 
 Runs immediately with no installation required.
 
-Alternative Download
+### Alternative Download
 
-ImageForge-Optimiser-Setup-1.1.0.exe
+**ImageForge-Optimiser-Setup-1.1.0.exe**
 
 Standard Windows installer version.
 
-Installation
+## Installation
+
 Download the latest release.
 Launch ImageForge Optimiser.
 Drag images or folders into the application.
@@ -96,7 +95,8 @@ Custom
 
 Manual control over format, quality and output settings.
 
-Version History
+## Version History
+
 v1.1.0
 Added
 Folder drag-and-drop support
@@ -127,7 +127,7 @@ v1.0.0
 
 Initial public release.
 
-Features
+## Features
 Batch image optimisation
 WebP support
 PNG support
@@ -145,7 +145,7 @@ HTML
 CSS
 Roadmap
 
-Planned improvements:
+## Planned improvements:
 
 Image thumbnails
 Before/After image comparison
@@ -155,7 +155,8 @@ Watch folder mode
 Windows right-click integration
 Additional export presets
 Compression estimation
-Development
+
+## Development
 
 Clone the repository:
 
