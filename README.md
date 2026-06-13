@@ -242,3 +242,14 @@ Creative Technologist
 Website: https://siradcliffe.uk
 
 GitHub: https://github.com/SRadcliffe
+
+## Support
+
+ImageForge Optimiser is released as a practical tool for creators, designers and visual production workflows.
+
+If it saves you time, helps with your image optimisation pipeline, or becomes part of your regular workflow, you can support future development here:
+
+[Buy me a coffee](https://buymeacoffee.com/sradcliffe)
+
+Support helps me keep building, testing and releasing useful creative production tools through ForgeWorks Studio.
+
